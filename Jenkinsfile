@@ -1,39 +1,28 @@
-pipeline {
-    agent { label "dev-server"}
-    
+pipeline{
+    agent {label "dev-server"}
     stages {
-        
-        stage("code"){
+        stage("Clone code") {
             steps{
-                git url: "https://github.com/LondheShubham153/node-todo-cicd.git", branch: "master"
-                echo 'bhaiyya code clone ho gaya'
+               git url: "https://github.com/Dharam313/node-todo-cicd.git", branch: "master" 
             }
         }
-        stage("build and test"){
+        stage("Build and Test") {
             steps{
-                sh "docker build -t node-app-test-new ."
-                echo 'code build bhi ho gaya'
+               sh "docker build . -t node-app-test-new" 
             }
         }
-        stage("scan image"){
+        stage("Push to docker hub") {
             steps{
-                echo 'image scanning ho gayi'
+              withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
+              sh "docker tag node-app-test-new ${env.dockerHubUser}/node-app-test-new:latest"
+              sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
+              sh "docker push ${env.dockerHubUser}/node-app-test-new:latest"
+              }
             }
         }
-        stage("push"){
-            steps{
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker tag node-app-test-new:latest ${env.dockerHubUser}/node-app-test-new:latest"
-                sh "docker push ${env.dockerHubUser}/node-app-test-new:latest"
-                echo 'image push ho gaya'
-                }
-            }
-        }
-        stage("deploy"){
+        stage("Deploy") {
             steps{
                 sh "docker-compose down && docker-compose up -d"
-                echo 'deployment ho gayi'
             }
         }
     }
